@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 import HeroScene from "@/components/HeroScene";
 import ChatWidget from "@/components/ChatWidget";
@@ -15,8 +16,9 @@ export default function Home() {
 
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#060b16]/75 backdrop-blur-xl">
         <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-3 md:px-8">
-          <a href="#top" className="text-xs font-semibold tracking-[0.22em] text-cyan-200">
-            {siteContent.brand}
+          <a href="#top" className="flex items-center gap-2 text-xs font-semibold tracking-[0.22em] text-cyan-200">
+            <Image src="/ami-logo.svg" alt="AMI logo" width={28} height={28} className="h-7 w-7" priority />
+            <span>{siteContent.brand}</span>
           </a>
           <ul className="hidden items-center gap-6 md:flex">
             {siteContent.navLinks.map((item) => (
