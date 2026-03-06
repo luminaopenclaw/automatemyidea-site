@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import HeroScene from "@/components/HeroScene";
+import ChatWidget from "@/components/ChatWidget";
 import { fadeIn, fadeUp, slideIn, staggerContainer, viewportOnce } from "@/lib/motion";
 
 const navLinks = [
@@ -249,6 +250,7 @@ export default function Home() {
           </div>
         </motion.section>
       </main>
+      <ChatWidget />
     </div>
   );
 }
