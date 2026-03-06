@@ -1,16 +1,39 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
 type Msg = { role: "user" | "assistant"; text: string };
+
+function getSessionId() {
+  if (typeof window === "undefined") return "";
+  const key = "ami_chat_session_id";
+  const existing = localStorage.getItem(key);
+  if (existing) return existing;
+  const created = `ami_${crypto.randomUUID()}`;
+  localStorage.setItem(key, created);
+  return created;
+}
 
 export default function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [contactSaved, setContactSaved] = useState(false);
+  const [sessionId, setSessionId] = useState("");
   const [messages, setMessages] = useState<Msg[]>([
-    { role: "assistant", text: "Hey — I’m NOVA. Tell me your business bottleneck and I’ll suggest an automation." },
+    {
+      role: "assistant",
+      text: "Hey — I’m NOVA. Tell me your biggest business bottleneck and I’ll suggest your top 3 automation wins.",
+    },
   ]);
+
+  useEffect(() => {
+    setSessionId(getSessionId());
+  }, []);
+
+  const shouldAskContact = useMemo(() => messages.filter((m) => m.role === "user").length >= 2 && !contactSaved, [messages, contactSaved]);
 
   async function send(e: FormEvent) {
     e.preventDefault();
@@ -25,7 +48,13 @@ export default function ChatWidget() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: next[next.length - 1].text }),
+        body: JSON.stringify({
+          sessionId,
+          message: next[next.length - 1].text,
+          messages: next,
+          lead: contactSaved ? { name, email } : undefined,
+          source: "website-widget",
+        }),
       });
       const data = await res.json();
       setMessages((prev) => [...prev, { role: "assistant", text: data.reply || "I hit a temporary issue. Try again." }]);
@@ -36,10 +65,30 @@ export default function ChatWidget() {
     }
   }
 
+  async function saveContact() {
+    if (!email.trim() || !sessionId) return;
+    try {
+      await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId,
+          event: "lead_capture",
+          lead: { name, email },
+          source: "website-widget",
+        }),
+      });
+      setContactSaved(true);
+      setMessages((prev) => [...prev, { role: "assistant", text: "Perfect — got it. I’ll tailor recommendations to your business context." }]);
+    } catch {
+      // silent fallback
+    }
+  }
+
   return (
     <div className="fixed bottom-5 right-5 z-50">
       {open ? (
-        <div className="w-[340px] rounded-2xl border border-cyan-200/30 bg-[#050c18] p-3 shadow-2xl">
+        <div className="w-[360px] rounded-2xl border border-cyan-200/30 bg-[#050c18] p-3 shadow-2xl">
           <div className="mb-2 flex items-center justify-between">
             <p className="text-sm font-semibold text-cyan-100">NOVA Assistant</p>
             <button onClick={() => setOpen(false)} className="text-xs text-zinc-300">Close</button>
@@ -54,6 +103,32 @@ export default function ChatWidget() {
               </div>
             ))}
           </div>
+
+          {shouldAskContact && (
+            <div className="mb-2 space-y-2 rounded-xl border border-cyan-200/20 bg-cyan-300/5 p-2">
+              <p className="text-xs text-cyan-100">Want a tailored automation plan? Drop your details:</p>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Name (optional)"
+                className="w-full rounded-md border border-white/20 bg-transparent px-2 py-1.5 text-xs"
+              />
+              <input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email"
+                className="w-full rounded-md border border-white/20 bg-transparent px-2 py-1.5 text-xs"
+              />
+              <button
+                onClick={saveContact}
+                disabled={!email.trim()}
+                className="w-full rounded-md bg-cyan-300 px-2 py-1.5 text-xs font-semibold text-slate-900 disabled:opacity-50"
+              >
+                Save details
+              </button>
+            </div>
+          )}
+
           <form onSubmit={send} className="flex gap-2">
             <input
               value={text}
