@@ -59,7 +59,7 @@ async function openRouterReply(payload: Payload): Promise<{ reply: string | null
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) return { reply: null, error: "missing_openrouter_api_key" };
 
-  const model = process.env.OPENROUTER_MODEL || "openrouter/auto";
+  const model = process.env.OPENROUTER_MODEL || "openai/gpt-4o-mini";
   const siteUrl = process.env.SITE_URL || "https://automatemyidea-site.vercel.app";
 
   const history = (payload.messages || [])
@@ -111,8 +111,23 @@ Rules:
   }
 
   const data = await res.json();
-  const text = data?.choices?.[0]?.message?.content?.trim();
-  return { reply: text || null, error: text ? undefined : "openrouter_empty_response" };
+  const content = data?.choices?.[0]?.message?.content;
+  const text =
+    typeof content === "string"
+      ? content.trim()
+      : Array.isArray(content)
+        ? content
+            .map((c: { type?: string; text?: string }) => (c?.type === "text" ? c.text || "" : ""))
+            .join("\n")
+            .trim()
+        : "";
+
+  if (!text) {
+    const reason = data?.choices?.[0]?.finish_reason || "unknown";
+    return { reply: null, error: `openrouter_empty_response:${reason}` };
+  }
+
+  return { reply: text };
 }
 
 export async function POST(req: Request) {
@@ -140,9 +155,9 @@ export async function POST(req: Request) {
     const ai = await openRouterReply(payload);
     if (ai.reply) return NextResponse.json({ reply: ai.reply });
 
-    if (ai.error && ai.error !== "openrouter_empty_response") {
+    if (ai.error) {
       return NextResponse.json({
-        reply: `AI provider not active yet (${ai.error}). Please check Vercel env vars and redeploy.`,
+        reply: `AI provider not active yet (${ai.error}). Check OPENROUTER_API_KEY/OPENROUTER_MODEL in Vercel and redeploy.`,
       });
     }
 
