@@ -55,9 +55,9 @@ function fallbackReply(payload: Payload) {
   return genericTop3();
 }
 
-async function openRouterReply(payload: Payload): Promise<{ reply: string | null; error?: string }> {
+async function openRouterReply(payload: Payload): Promise<{ reply: string | null; error?: string; debug?: string }> {
   const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) return { reply: null, error: "missing_openrouter_api_key" };
+  if (!apiKey) return { reply: null, error: "missing_openrouter_api_key", debug: "OPENROUTER_API_KEY missing" };
 
   const model = process.env.OPENROUTER_MODEL || "openai/gpt-4o-mini";
   const siteUrl = process.env.SITE_URL || "https://automatemyidea-site.vercel.app";
@@ -106,8 +106,8 @@ Rules:
   });
 
   if (!res.ok) {
-    const errText = (await res.text()).slice(0, 180);
-    return { reply: null, error: `openrouter_http_${res.status}:${errText}` };
+    const errText = (await res.text()).slice(0, 260);
+    return { reply: null, error: `openrouter_http_${res.status}`, debug: errText };
   }
 
   const data = await res.json();
@@ -124,7 +124,14 @@ Rules:
 
   if (!text) {
     const reason = data?.choices?.[0]?.finish_reason || "unknown";
-    return { reply: null, error: `openrouter_empty_response:${reason}` };
+    const snippet = JSON.stringify({
+      model,
+      reason,
+      hasChoices: Array.isArray(data?.choices),
+      firstChoice: data?.choices?.[0],
+      error: data?.error,
+    }).slice(0, 500);
+    return { reply: null, error: `openrouter_empty_response:${reason}`, debug: snippet };
   }
 
   return { reply: text };
@@ -156,8 +163,11 @@ export async function POST(req: Request) {
     if (ai.reply) return NextResponse.json({ reply: ai.reply });
 
     if (ai.error) {
+      const isDiag = (payload.message || "").toLowerCase().includes("__diag");
       return NextResponse.json({
-        reply: `AI provider not active yet (${ai.error}). Check OPENROUTER_API_KEY/OPENROUTER_MODEL in Vercel and redeploy.`,
+        reply: isDiag
+          ? `AI provider not active (${ai.error}) | ${ai.debug || "no debug"}`
+          : `AI provider not active yet (${ai.error}). Check OPENROUTER_API_KEY/OPENROUTER_MODEL in Vercel and redeploy.`,
       });
     }
 
