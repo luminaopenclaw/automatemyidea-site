@@ -24,20 +24,10 @@ const resultCards = [
 
 function NovaNode() {
   return (
-    <Float speed={1.1} rotationIntensity={0.2} floatIntensity={0.35}>
+    <Float speed={0.9} rotationIntensity={0.08} floatIntensity={0.2}>
       <mesh position={[0, 0, 0]}>
-        <sphereGeometry args={[0.95, 64, 64]} />
-        <meshStandardMaterial color="#4FA8FF" metalness={0.35} roughness={0.15} emissive="#6BE1FF" emissiveIntensity={0.45} />
-      </mesh>
-
-      <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[1.38, 0.06, 20, 160]} />
-        <meshStandardMaterial color="#0A84FF" emissive="#6BE1FF" emissiveIntensity={0.3} />
-      </mesh>
-
-      <mesh rotation={[Math.PI / 2, Math.PI / 4, 0]}>
-        <torusGeometry args={[1.75, 0.04, 16, 120]} />
-        <meshStandardMaterial color="#6BE1FF" emissive="#6BE1FF" emissiveIntensity={0.2} transparent opacity={0.75} />
+        <sphereGeometry args={[1.1, 64, 64]} />
+        <meshStandardMaterial color="#4FA8FF" metalness={0.2} roughness={0.25} emissive="#6BE1FF" emissiveIntensity={0.32} transparent opacity={0.9} />
       </mesh>
     </Float>
   );
@@ -109,12 +99,12 @@ export default function HeroSequence() {
               </Canvas>
             </div>
 
-            <div className="nova-mascot pointer-events-none absolute left-1/2 top-[43%] z-20 h-36 w-28 -translate-x-1/2 -translate-y-1/2 opacity-0 md:h-44 md:w-32">
+            <div className="nova-mascot pointer-events-none absolute left-1/2 top-[44%] z-20 h-48 w-36 -translate-x-1/2 -translate-y-1/2 opacity-0 md:h-64 md:w-48">
               <div className="absolute inset-0 -z-10 rounded-full bg-[radial-gradient(circle,rgba(107,225,255,0.38),transparent_65%)] blur-2xl" />
               <Image src="/nova-mascot.png" alt="NOVA mascot" fill className="object-contain drop-shadow-[0_16px_32px_rgba(10,132,255,0.25)]" priority />
             </div>
 
-            <div className="nova-mark pointer-events-none absolute left-1/2 top-[60%] z-20 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#d8eaff] bg-white/85 px-4 py-2 text-[11px] font-semibold tracking-[0.14em] text-[#0A4E8A] opacity-0 shadow-[0_10px_35px_rgba(10,132,255,0.22)]">
+            <div className="nova-mark pointer-events-none absolute left-1/2 top-[66%] z-20 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#d8eaff] bg-white/90 px-4 py-2 text-[11px] font-semibold tracking-[0.14em] text-[#0A4E8A] opacity-0 shadow-[0_10px_35px_rgba(10,132,255,0.22)]">
               NOVA OPERATOR
             </div>
 
