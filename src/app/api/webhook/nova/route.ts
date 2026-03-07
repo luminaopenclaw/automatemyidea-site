@@ -19,7 +19,6 @@ function hairdresserReply() {
     "3) Lead-to-booking assistant: instantly reply to Instagram/WhatsApp/Facebook inquiries with available slots.",
     "",
     "Fastest win is usually #1 (no-show prevention) because it improves chair utilisation immediately.",
-    "If you want, I can map a simple setup for Fresha/Phorest/Booksy/Timely depending on what you use.",
   ].join("\n");
 }
 
@@ -29,8 +28,6 @@ function restaurantReply() {
     "1) Reservation confirmations + reminder SMS",
     "2) Review request automation 2 hours after visit",
     "3) Repeat-customer winback campaigns after 30 days inactive",
-    "",
-    "Quickest ROI is reminder + winback because it lifts repeat bookings fast.",
   ].join("\n");
 }
 
@@ -45,39 +42,76 @@ function genericTop3() {
   ].join("\n");
 }
 
-function buildReply(payload: Payload) {
+function fallbackReply(payload: Payload) {
   const message = (payload.message || "").toLowerCase();
 
-  if (hasAny(message, ["hair", "hairdresser", "salon", "barber", "stylist"])) {
-    return hairdresserReply();
-  }
+  if (hasAny(message, ["hair", "hairdresser", "salon", "barber", "stylist"])) return hairdresserReply();
+  if (hasAny(message, ["restaurant", "cafe", "food", "takeaway", "hospitality"])) return restaurantReply();
 
-  if (hasAny(message, ["restaurant", "cafe", "food", "takeaway", "hospitality"])) {
-    return restaurantReply();
-  }
-
-  if (hasAny(message, ["price", "cost", "budget"])) {
-    return "Most SMBs start with a focused sprint, then scale monthly after ROI is proven. If you share your industry + team size, I’ll recommend the most cost-effective first automation.";
-  }
-
-  if (hasAny(message, ["lead", "sales", "inquiry"])) {
-    return "Top 3 lead automations: instant inquiry triage + routing, auto follow-up sequences, and call-booking qualification. Want me to tailor this to your actual channel mix (web, IG, WhatsApp, phone)?";
-  }
-
-  if (hasAny(message, ["support", "customer"])) {
-    return "For support teams: ticket categorization, draft replies for repetitive issues, and escalation rules. This usually reduces response time 30-50%.";
-  }
-
-  if (hasAny(message, ["admin", "ops", "operations"])) {
-    return "Best ops automations: intake-to-task workflow, document/data syncing, and status update automation. These typically save 10-20 hours/week in small teams.";
-  }
-
-  // If user asks follow-up and we already gave a generic answer, avoid repeating same text.
   if (hasAny(message, ["anything else", "what else", "more", "another"])) {
-    return "Yes — next layer is retention automation: reactivation campaigns, review requests, and VIP reminders. If you share your business type, I’ll give you a concrete 14-day rollout.";
+    return "Yes — next layer is retention automation: reactivation campaigns, review requests, and VIP reminders. Share your business type and booking tool and I’ll map a 14-day rollout.";
   }
 
   return genericTop3();
+}
+
+async function openRouterReply(payload: Payload) {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) return null;
+
+  const model = process.env.OPENROUTER_MODEL || "openrouter/auto";
+  const siteUrl = process.env.SITE_URL || "https://automatemyidea-site.vercel.app";
+
+  const history = (payload.messages || [])
+    .slice(-8)
+    .map((m) => ({ role: m.role, content: m.text }))
+    .filter((m) => m.content?.trim());
+
+  const currentMessage = payload.message?.trim();
+
+  const leadContext = payload.lead?.email
+    ? `Lead captured: ${payload.lead.name || "unknown name"}, ${payload.lead.email}.`
+    : "Lead not captured yet.";
+
+  const systemPrompt = `You are NOVA, an AI automation consultant for SMBs.
+Goal: give practical, specific, concise recommendations that help the visitor identify first automations and book a strategy call.
+Rules:
+- Never be generic if the business type is known.
+- Give top 3 automations in bullets where relevant.
+- Ask ONE clarifying question at the end.
+- Keep under 140 words unless user asks for detail.
+- Tone: commercial, practical, direct.
+- ${leadContext}`;
+
+  const messages = [
+    { role: "system", content: systemPrompt },
+    ...history,
+    ...(currentMessage ? [{ role: "user", content: currentMessage }] : []),
+  ];
+
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": siteUrl,
+      "X-Title": "AutomateMyIdea Chat",
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      temperature: 0.4,
+      max_tokens: 260,
+    }),
+  });
+
+  if (!res.ok) {
+    return null;
+  }
+
+  const data = await res.json();
+  const text = data?.choices?.[0]?.message?.content?.trim();
+  return text || null;
 }
 
 export async function POST(req: Request) {
@@ -90,7 +124,7 @@ export async function POST(req: Request) {
 
       return NextResponse.json({
         reply: leadEmail
-          ? `Perfect${leadName ? `, ${leadName}` : ""} — got your details. Tell me your business type and I’ll send your top 3 automation opportunities.`
+          ? `Perfect${leadName ? `, ${leadName}` : ""} — got your details. Tell me your business type and your biggest weekly bottleneck, and I’ll map your top 3 automations.`
           : "Thanks — share your email and I’ll send your top 3 automation opportunities.",
       });
     }
@@ -102,7 +136,10 @@ export async function POST(req: Request) {
       });
     }
 
-    return NextResponse.json({ reply: buildReply(payload) });
+    const aiReply = await openRouterReply(payload);
+    if (aiReply) return NextResponse.json({ reply: aiReply });
+
+    return NextResponse.json({ reply: fallbackReply(payload) });
   } catch {
     return NextResponse.json({ reply: "Temporary issue. Please try again." }, { status: 500 });
   }

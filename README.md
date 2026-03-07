@@ -40,8 +40,11 @@ cp .env.example .env.local
 
 Set:
 
-- `OPENCLAW_WEBHOOK_URL`
+- `OPENCLAW_WEBHOOK_URL` (optional; if empty chat uses internal `/api/webhook/nova`)
 - `OPENCLAW_API_KEY` (optional)
+- `OPENROUTER_API_KEY` (recommended for real AI responses)
+- `OPENROUTER_MODEL` (default `openrouter/auto`)
+- `SITE_URL` (your live domain)
 
 ### Chat Flow
 
