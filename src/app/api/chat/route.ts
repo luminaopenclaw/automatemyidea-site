@@ -21,15 +21,9 @@ export async function POST(req: Request) {
   try {
     const payload = (await req.json()) as ChatPayload;
 
-    const webhook = process.env.OPENCLAW_WEBHOOK_URL;
+    const fallbackWebhook = new URL("/api/webhook/nova", req.url).toString();
+    const webhook = process.env.OPENCLAW_WEBHOOK_URL || fallbackWebhook;
     const apiKey = process.env.OPENCLAW_API_KEY;
-
-    if (!webhook) {
-      return NextResponse.json({
-        reply:
-          "Chat backend not connected yet. Set OPENCLAW_WEBHOOK_URL (and optional OPENCLAW_API_KEY) in env.",
-      });
-    }
 
     const upstreamPayload = {
       sessionId: payload.sessionId,
@@ -53,7 +47,8 @@ export async function POST(req: Request) {
 
     if (!res.ok) {
       const txt = await res.text();
-      return NextResponse.json({ reply: `Upstream error: ${txt.slice(0, 180)}` });
+      const reason = txt?.trim() ? txt.slice(0, 180) : `HTTP ${res.status}`;
+      return NextResponse.json({ reply: `Upstream error: ${reason}` });
     }
 
     const data = await res.json();
