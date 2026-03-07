@@ -4,28 +4,80 @@ type Payload = {
   message?: string;
   event?: string;
   lead?: { name?: string; email?: string };
+  messages?: Array<{ role: "user" | "assistant"; text: string }>;
 };
 
-function buildReply(message: string) {
-  const text = message.toLowerCase();
+function hasAny(text: string, terms: string[]) {
+  return terms.some((t) => text.includes(t));
+}
 
-  if (text.includes("price") || text.includes("cost") || text.includes("budget")) {
-    return "Great question. Most SMBs start with a focused automation sprint, then scale monthly once ROI is proven. If you share your team size + biggest bottleneck, I can suggest the best-fit option.";
+function hairdresserReply() {
+  return [
+    "For a hairdresser, I’d start with these 3 automations:",
+    "1) No-show prevention: auto SMS reminders at 48h + 24h + 2h before appointments.",
+    "2) Rebooking flow: automatic message 4-6 weeks after a visit with one-click rebook link.",
+    "3) Lead-to-booking assistant: instantly reply to Instagram/WhatsApp/Facebook inquiries with available slots.",
+    "",
+    "Fastest win is usually #1 (no-show prevention) because it improves chair utilisation immediately.",
+    "If you want, I can map a simple setup for Fresha/Phorest/Booksy/Timely depending on what you use.",
+  ].join("\n");
+}
+
+function restaurantReply() {
+  return [
+    "For restaurants/cafes, top automations are:",
+    "1) Reservation confirmations + reminder SMS",
+    "2) Review request automation 2 hours after visit",
+    "3) Repeat-customer winback campaigns after 30 days inactive",
+    "",
+    "Quickest ROI is reminder + winback because it lifts repeat bookings fast.",
+  ].join("\n");
+}
+
+function genericTop3() {
+  return [
+    "Here are 3 automations most SMBs start with:",
+    "1) Lead response automation (reply in under 60 seconds)",
+    "2) Follow-up automation (quote/chase/reminders)",
+    "3) Admin automation (forms → tasks → CRM updates)",
+    "",
+    "Tell me your sector and booking/sales process, and I’ll tailor this properly.",
+  ].join("\n");
+}
+
+function buildReply(payload: Payload) {
+  const message = (payload.message || "").toLowerCase();
+
+  if (hasAny(message, ["hair", "hairdresser", "salon", "barber", "stylist"])) {
+    return hairdresserReply();
   }
 
-  if (text.includes("lead") || text.includes("sales") || text.includes("inquiry")) {
-    return "Top 3 automations for lead handling: 1) instant inquiry triage + routing, 2) auto follow-up sequences, 3) call-booking qualification flow. Want me to map these to your current process?";
+  if (hasAny(message, ["restaurant", "cafe", "food", "takeaway", "hospitality"])) {
+    return restaurantReply();
   }
 
-  if (text.includes("support") || text.includes("customer")) {
-    return "For support teams, highest ROI usually comes from: ticket categorization, draft responses for repetitive issues, and automated escalation rules. I can outline a 14-day rollout plan if you share your current volume.";
+  if (hasAny(message, ["price", "cost", "budget"])) {
+    return "Most SMBs start with a focused sprint, then scale monthly after ROI is proven. If you share your industry + team size, I’ll recommend the most cost-effective first automation.";
   }
 
-  if (text.includes("admin") || text.includes("ops") || text.includes("operations")) {
-    return "Strong ops automations to start with: intake-to-task automation, document/data syncing, and status update workflows. These typically save 20-40 hours/week for small teams.";
+  if (hasAny(message, ["lead", "sales", "inquiry"])) {
+    return "Top 3 lead automations: instant inquiry triage + routing, auto follow-up sequences, and call-booking qualification. Want me to tailor this to your actual channel mix (web, IG, WhatsApp, phone)?";
   }
 
-  return "Based on what you shared, your best first step is an Automation Opportunity Map: we identify your top 3 fastest-win automations and expected ROI window. Tell me your biggest weekly bottleneck and I’ll suggest the first workflow to automate.";
+  if (hasAny(message, ["support", "customer"])) {
+    return "For support teams: ticket categorization, draft replies for repetitive issues, and escalation rules. This usually reduces response time 30-50%.";
+  }
+
+  if (hasAny(message, ["admin", "ops", "operations"])) {
+    return "Best ops automations: intake-to-task workflow, document/data syncing, and status update automation. These typically save 10-20 hours/week in small teams.";
+  }
+
+  // If user asks follow-up and we already gave a generic answer, avoid repeating same text.
+  if (hasAny(message, ["anything else", "what else", "more", "another"])) {
+    return "Yes — next layer is retention automation: reactivation campaigns, review requests, and VIP reminders. If you share your business type, I’ll give you a concrete 14-day rollout.";
+  }
+
+  return genericTop3();
 }
 
 export async function POST(req: Request) {
@@ -38,7 +90,7 @@ export async function POST(req: Request) {
 
       return NextResponse.json({
         reply: leadEmail
-          ? `Perfect${leadName ? `, ${leadName}` : ""} — got your details. Next, tell me your #1 bottleneck and I’ll map your first automation.`
+          ? `Perfect${leadName ? `, ${leadName}` : ""} — got your details. Tell me your business type and I’ll send your top 3 automation opportunities.`
           : "Thanks — share your email and I’ll send your top 3 automation opportunities.",
       });
     }
@@ -46,11 +98,11 @@ export async function POST(req: Request) {
     const message = payload.message?.trim() || "";
     if (!message) {
       return NextResponse.json({
-        reply: "Tell me your biggest bottleneck (leads, ops, support, or admin) and I’ll suggest your top 3 automation opportunities.",
+        reply: "Tell me your business type (e.g., salon, clinic, agency, trades) and I’ll recommend your top 3 automations.",
       });
     }
 
-    return NextResponse.json({ reply: buildReply(message) });
+    return NextResponse.json({ reply: buildReply(payload) });
   } catch {
     return NextResponse.json({ reply: "Temporary issue. Please try again." }, { status: 500 });
   }
