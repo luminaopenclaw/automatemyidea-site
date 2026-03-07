@@ -89,52 +89,58 @@ Rules:
     ...(currentMessage ? [{ role: "user", content: currentMessage }] : []),
   ];
 
-  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": siteUrl,
-      "X-Title": "AutomateMyIdea Chat",
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      temperature: 0.4,
-      max_tokens: 260,
-    }),
-  });
+  async function requestModel(modelId: string, maxTokens = 320) {
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": siteUrl,
+        "X-Title": "AutomateMyIdea Chat",
+      },
+      body: JSON.stringify({
+        model: modelId,
+        messages,
+        temperature: 0.4,
+        max_tokens: maxTokens,
+      }),
+    });
 
-  if (!res.ok) {
-    const errText = (await res.text()).slice(0, 260);
-    return { reply: null, error: `openrouter_http_${res.status}`, debug: errText };
+    if (!res.ok) {
+      const errText = (await res.text()).slice(0, 260);
+      return { text: null as string | null, reason: `http_${res.status}`, debug: errText };
+    }
+
+    const data = await res.json();
+    const content = data?.choices?.[0]?.message?.content;
+    const text =
+      typeof content === "string"
+        ? content.trim()
+        : Array.isArray(content)
+          ? content
+              .map((c: { type?: string; text?: string }) => (c?.type === "text" ? c.text || "" : ""))
+              .join("\n")
+              .trim()
+          : "";
+
+    return {
+      text: text || null,
+      reason: data?.choices?.[0]?.finish_reason || "unknown",
+      debug: JSON.stringify({ model: modelId, firstChoice: data?.choices?.[0], error: data?.error }).slice(0, 500),
+    };
   }
 
-  const data = await res.json();
-  const content = data?.choices?.[0]?.message?.content;
-  const text =
-    typeof content === "string"
-      ? content.trim()
-      : Array.isArray(content)
-        ? content
-            .map((c: { type?: string; text?: string }) => (c?.type === "text" ? c.text || "" : ""))
-            .join("\n")
-            .trim()
-        : "";
+  const first = await requestModel(model, 320);
+  if (first.text) return { reply: first.text };
 
-  if (!text) {
-    const reason = data?.choices?.[0]?.finish_reason || "unknown";
-    const snippet = JSON.stringify({
-      model,
-      reason,
-      hasChoices: Array.isArray(data?.choices),
-      firstChoice: data?.choices?.[0],
-      error: data?.error,
-    }).slice(0, 500);
-    return { reply: null, error: `openrouter_empty_response:${reason}`, debug: snippet };
+  const safeModel = "openai/gpt-4o-mini";
+  if (model !== safeModel) {
+    const second = await requestModel(safeModel, 320);
+    if (second.text) return { reply: second.text };
+    return { reply: null, error: `openrouter_empty_response:${second.reason}`, debug: second.debug };
   }
 
-  return { reply: text };
+  return { reply: null, error: `openrouter_empty_response:${first.reason}`, debug: first.debug };
 }
 
 export async function POST(req: Request) {
