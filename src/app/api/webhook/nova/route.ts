@@ -55,9 +55,9 @@ function fallbackReply(payload: Payload) {
   return genericTop3();
 }
 
-async function openRouterReply(payload: Payload) {
+async function openRouterReply(payload: Payload): Promise<{ reply: string | null; error?: string }> {
   const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) return { reply: null, error: "missing_openrouter_api_key" };
 
   const model = process.env.OPENROUTER_MODEL || "openrouter/auto";
   const siteUrl = process.env.SITE_URL || "https://automatemyidea-site.vercel.app";
@@ -106,12 +106,13 @@ Rules:
   });
 
   if (!res.ok) {
-    return null;
+    const errText = (await res.text()).slice(0, 180);
+    return { reply: null, error: `openrouter_http_${res.status}:${errText}` };
   }
 
   const data = await res.json();
   const text = data?.choices?.[0]?.message?.content?.trim();
-  return text || null;
+  return { reply: text || null, error: text ? undefined : "openrouter_empty_response" };
 }
 
 export async function POST(req: Request) {
@@ -136,8 +137,14 @@ export async function POST(req: Request) {
       });
     }
 
-    const aiReply = await openRouterReply(payload);
-    if (aiReply) return NextResponse.json({ reply: aiReply });
+    const ai = await openRouterReply(payload);
+    if (ai.reply) return NextResponse.json({ reply: ai.reply });
+
+    if (ai.error && ai.error !== "openrouter_empty_response") {
+      return NextResponse.json({
+        reply: `AI provider not active yet (${ai.error}). Please check Vercel env vars and redeploy.`,
+      });
+    }
 
     return NextResponse.json({ reply: fallbackReply(payload) });
   } catch {
