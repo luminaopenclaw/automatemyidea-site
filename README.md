@@ -2,6 +2,9 @@
 
 Premium 3D marketing site built with Next.js.
 
+## Quick docs
+- Chatbot setup runbook: `docs/CHATBOT_SETUP_GUIDE.md`
+
 ## Edit Website Content Fast
 
 Update all key content in one file:
