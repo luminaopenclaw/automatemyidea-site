@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Float } from "@react-three/drei";
@@ -58,7 +59,8 @@ export default function HeroSequence() {
     tl.fromTo(q(".problem-card"), { y: -24, opacity: 0, scale: 0.95 }, { y: 0, opacity: 1, scale: 1, stagger: 0.1, duration: 0.55 })
       .to(q(".phase-problem"), { opacity: 1, duration: 0.4 }, 0.15)
       .fromTo(q(".ai-node-wrap"), { opacity: 0, scale: 0.75 }, { opacity: 1, scale: 1, duration: 0.65 }, 0.8)
-      .fromTo(q(".nova-mark"), { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.45 }, 1.05)
+      .fromTo(q(".nova-mascot"), { opacity: 0, scale: 0.7, y: 12 }, { opacity: 1, scale: 1, y: 0, duration: 0.6, ease: "power2.out" }, 1.0)
+      .fromTo(q(".nova-mark"), { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.45 }, 1.2)
       .to(q(".problem-card"), { x: 0, y: 0, duration: 0.55, stagger: 0.06 }, 1.35)
       .to(q(".problem-card"), { opacity: 0.12, scale: 0.92, duration: 0.4, stagger: 0.05 }, 1.65)
       .fromTo(q(".result-card"), { opacity: 0, y: 18, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, stagger: 0.09, duration: 0.5 }, 2.3)
@@ -107,7 +109,12 @@ export default function HeroSequence() {
               </Canvas>
             </div>
 
-            <div className="nova-mark pointer-events-none absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#d8eaff] bg-white/85 px-4 py-2 text-[11px] font-semibold tracking-[0.14em] text-[#0A4E8A] opacity-0 shadow-[0_10px_35px_rgba(10,132,255,0.22)]">
+            <div className="nova-mascot pointer-events-none absolute left-1/2 top-[43%] z-20 h-36 w-28 -translate-x-1/2 -translate-y-1/2 opacity-0 md:h-44 md:w-32">
+              <div className="absolute inset-0 -z-10 rounded-full bg-[radial-gradient(circle,rgba(107,225,255,0.38),transparent_65%)] blur-2xl" />
+              <Image src="/nova-mascot.png" alt="NOVA mascot" fill className="object-contain drop-shadow-[0_16px_32px_rgba(10,132,255,0.25)]" priority />
+            </div>
+
+            <div className="nova-mark pointer-events-none absolute left-1/2 top-[60%] z-20 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#d8eaff] bg-white/85 px-4 py-2 text-[11px] font-semibold tracking-[0.14em] text-[#0A4E8A] opacity-0 shadow-[0_10px_35px_rgba(10,132,255,0.22)]">
               NOVA OPERATOR
             </div>
 
