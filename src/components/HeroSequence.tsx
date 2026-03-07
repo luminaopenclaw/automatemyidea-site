@@ -21,16 +21,22 @@ const resultCards = [
   "Ops synced daily",
 ];
 
-function AiNode() {
+function NovaNode() {
   return (
-    <Float speed={1.2} rotationIntensity={0.25} floatIntensity={0.4}>
+    <Float speed={1.1} rotationIntensity={0.2} floatIntensity={0.35}>
       <mesh position={[0, 0, 0]}>
-        <sphereGeometry args={[1.05, 64, 64]} />
-        <meshStandardMaterial color="#4FA8FF" metalness={0.3} roughness={0.2} emissive="#6BE1FF" emissiveIntensity={0.35} />
+        <sphereGeometry args={[0.95, 64, 64]} />
+        <meshStandardMaterial color="#4FA8FF" metalness={0.35} roughness={0.15} emissive="#6BE1FF" emissiveIntensity={0.45} />
       </mesh>
+
       <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[1.45, 0.06, 16, 140]} />
-        <meshStandardMaterial color="#0A84FF" emissive="#6BE1FF" emissiveIntensity={0.2} />
+        <torusGeometry args={[1.38, 0.06, 20, 160]} />
+        <meshStandardMaterial color="#0A84FF" emissive="#6BE1FF" emissiveIntensity={0.3} />
+      </mesh>
+
+      <mesh rotation={[Math.PI / 2, Math.PI / 4, 0]}>
+        <torusGeometry args={[1.75, 0.04, 16, 120]} />
+        <meshStandardMaterial color="#6BE1FF" emissive="#6BE1FF" emissiveIntensity={0.2} transparent opacity={0.75} />
       </mesh>
     </Float>
   );
@@ -52,6 +58,7 @@ export default function HeroSequence() {
     tl.fromTo(q(".problem-card"), { y: -24, opacity: 0, scale: 0.95 }, { y: 0, opacity: 1, scale: 1, stagger: 0.1, duration: 0.55 })
       .to(q(".phase-problem"), { opacity: 1, duration: 0.4 }, 0.15)
       .fromTo(q(".ai-node-wrap"), { opacity: 0, scale: 0.75 }, { opacity: 1, scale: 1, duration: 0.65 }, 0.8)
+      .fromTo(q(".nova-mark"), { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.45 }, 1.05)
       .to(q(".problem-card"), { x: 0, y: 0, duration: 0.55, stagger: 0.06 }, 1.35)
       .to(q(".problem-card"), { opacity: 0.12, scale: 0.92, duration: 0.4, stagger: 0.05 }, 1.65)
       .fromTo(q(".result-card"), { opacity: 0, y: 18, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, stagger: 0.09, duration: 0.5 }, 2.3)
@@ -96,8 +103,12 @@ export default function HeroSequence() {
               <Canvas camera={{ position: [0, 0, 4], fov: 42 }}>
                 <ambientLight intensity={0.7} />
                 <directionalLight position={[2, 2, 3]} intensity={1.1} />
-                <AiNode />
+                <NovaNode />
               </Canvas>
+            </div>
+
+            <div className="nova-mark pointer-events-none absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#d8eaff] bg-white/85 px-4 py-2 text-[11px] font-semibold tracking-[0.14em] text-[#0A4E8A] opacity-0 shadow-[0_10px_35px_rgba(10,132,255,0.22)]">
+              NOVA OPERATOR
             </div>
 
             {problemCards.map((card, i) => (
@@ -131,7 +142,7 @@ export default function HeroSequence() {
               {problemCards.slice(0, 3).map((card) => (
                 <div key={card} className="problem-card rounded-xl border border-white/70 bg-white/80 px-3 py-2 text-xs text-slate-700">{card}</div>
               ))}
-              <div className="ai-node-wrap rounded-xl border border-[#cce2ff] bg-[#e9f3ff] px-3 py-2 text-center text-xs font-semibold text-[#0A4E8A] opacity-0">AI SYSTEM ACTIVE</div>
+              <div className="ai-node-wrap rounded-xl border border-[#cce2ff] bg-[#e9f3ff] px-3 py-2 text-center text-xs font-semibold text-[#0A4E8A] opacity-0">NOVA SYSTEM ACTIVE</div>
               {resultCards.slice(0, 3).map((card) => (
                 <div key={card} className="result-card rounded-xl border border-[#d7e8ff] bg-white px-3 py-2 text-xs font-semibold text-[#0A4E8A]">{card}</div>
               ))}
